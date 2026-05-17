@@ -243,14 +243,14 @@ s4n <- run_sim(4, "fire_north")
 s1s <- run_sim(1, "fire_south")
 s4s <- run_sim(4, "fire_south")
 
-# Sensitivity sweeps (Scenario 4)
+# Sensitivity sweeps (Scenario 4) — use dur=800 so t95 is always found
 veh_sw <- tibble(vph = c(1.00, 1.10, 1.20, 1.30, 1.43)) |>
-  mutate(s = map(vph, \(v) run_sim(4, veh_per_hh = v)),
+  mutate(s = map(vph, \(v) run_sim(4, veh_per_hh = v, dur = 800)),
          t90 = map_dbl(s, "t90"), t95 = map_dbl(s, "t95"),
          total = map_dbl(s, "total_veh")) |> select(-s)
 
 shad_sw <- tibble(rate = c(0, .03, .06, .15, .30, 1.00)) |>
-  mutate(s = map(rate, \(r) run_sim(4, shadow_comp = r)),
+  mutate(s = map(rate, \(r) run_sim(4, shadow_comp = r, dur = 800)),
          t90 = map_dbl(s, "t90"), t95 = map_dbl(s, "t95")) |> select(-s)
 
 infra_list <- list(
@@ -317,10 +317,12 @@ pA <- ggplot(curve_df, aes(x = time, y = pct * 100,
   geom_hline(yintercept = 90, linetype = "dotted", colour = "grey50") +
   geom_point(data = milestones,
              aes(x = time, y = pct_val * 100, colour = fire),
-             shape = 18, size = 4, show.legend = FALSE) +
+             shape = 18, size = 4, show.legend = FALSE,
+             inherit.aes = FALSE) +
   geom_text(data = milestones,
             aes(x = time, y = pct_val * 100 - 5, label = paste0(time, " min")),
-            size = 2.8, show.legend = FALSE, colour = "grey20") +
+            size = 2.8, show.legend = FALSE, colour = "grey20",
+            inherit.aes = FALSE) +
   annotate("text", x = 3, y = 91.5, label = "90th pct threshold",
            hjust = 0, size = 3, colour = "grey40") +
   scale_colour_manual(values = fire_pal) +
@@ -491,7 +493,8 @@ pH <- ggplot(veh_sw, aes(x = vph)) +
   geom_point(aes(y = t90, colour = "90th pct"), size = 3) +
   geom_point(aes(y = t95, colour = "95th pct"), size = 3) +
   geom_vline(xintercept = VEH_PER_HH, linetype = "dotted", colour = "grey40") +
-  annotate("text", x = VEH_PER_HH + .01, y = max(veh_sw$t95, na.rm=T) * .98,
+  annotate("text", x = VEH_PER_HH + .01,
+           y = (max(c(veh_sw$t95, veh_sw$t90), na.rm = TRUE)) * .98,
            label = "Survey\n1.43", hjust = 0, size = 2.8, colour = "grey40") +
   scale_colour_manual(values = c("90th pct" = clr_blu, "95th pct" = clr_red)) +
   labs(title = "Sensitivity:\nVehicles per Household",
@@ -508,7 +511,8 @@ pI <- ggplot(shad_sw, aes(x = rate * 100)) +
   geom_point(aes(y = t90, colour = "90th pct"), size = 3) +
   geom_point(aes(y = t95, colour = "95th pct"), size = 3) +
   geom_vline(xintercept = 6, linetype = "dotted", colour = "grey40") +
-  annotate("text", x = 7, y = max(shad_sw$t95, na.rm=T) * .98,
+  annotate("text", x = 7,
+           y = max(c(shad_sw$t95, shad_sw$t90), na.rm = TRUE) * .98,
            label = "Survey\n6%", hjust = 0, size = 2.8, colour = "grey40") +
   scale_colour_manual(values = c("90th pct" = clr_blu, "95th pct" = clr_red)) +
   scale_x_continuous(labels = function(x) paste0(x, "%")) +
